@@ -14,7 +14,24 @@ export enum EventTypes {
   SearchStarted = 'SearchStarted',
   SearchCompleted = 'SearchCompleted',
   NavigationFailed = 'NavigationFailed',
-  ProviderStatus = 'ProviderStatus'
+  ProviderStatus = 'ProviderStatus',
+  ScrollStarted = 'ScrollStarted',
+  ScrollProgress = 'ScrollProgress',
+  NewBusinessesLoaded = 'NewBusinessesLoaded',
+  UrlCollected = 'UrlCollected',
+  DuplicateSkipped = 'DuplicateSkipped',
+  CollectionCompleted = 'CollectionCompleted',
+  
+  // Extraction Events
+  BusinessOpened = 'BusinessOpened',
+  BusinessValidated = 'BusinessValidated',
+  BusinessSkipped = 'BusinessSkipped',
+  BusinessFailed = 'BusinessFailed',
+  
+  // Recovery Events
+  CheckpointSaved = 'CheckpointSaved',
+  RecoveryStarted = 'RecoveryStarted',
+  RecoveryCompleted = 'RecoveryCompleted'
 }
 
 export class EventBus {
