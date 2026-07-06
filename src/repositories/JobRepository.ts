@@ -1,17 +1,30 @@
-import { PrismaClient } from '@prisma/client';
-import { JobModel, JobStatus } from '../models/Job';
+import prisma from './PrismaClient';
 
 export class JobRepository {
-  constructor(private prisma: PrismaClient) {}
-
-  async create(data: JobModel): Promise<JobModel> {
-    return this.prisma.job.create({ data: data as any }) as unknown as JobModel;
+  async createJob(keyword: string, provider: string, location?: string): Promise<string> {
+    const job = await prisma.job.create({
+      data: {
+        keyword,
+        provider,
+        location,
+        status: 'RUNNING'
+      }
+    });
+    return job.id;
   }
 
-  async complete(id: string): Promise<void> {
-    await this.prisma.job.update({
-      where: { id },
-      data: { status: JobStatus.Completed, finishedAt: new Date() }
+  async getUnfinishedJobs() {
+    return prisma.job.findMany({
+      where: {
+        status: 'RUNNING'
+      }
+    });
+  }
+
+  async markComplete(jobId: string) {
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: 'COMPLETED' }
     });
   }
 }
