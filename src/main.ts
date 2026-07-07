@@ -14,6 +14,9 @@ import { JobRepository } from './repositories/JobRepository';
 import { PersistenceService } from './services/PersistenceService';
 import { RecoveryService } from './services/RecoveryService';
 
+let extractedCount = 0;
+let metricsInterval: NodeJS.Timeout | null = null;
+
 async function bootstrap() {
   logger.info(`Starting Lead Collection Platform (Persistence Engine)`);
   
@@ -69,17 +72,16 @@ async function bootstrap() {
     job.status = JobStatus.COMPLETED;
 
     // For Sandbox Verification: Exit after 5 successful extractions
-    if (global.extractedCount === undefined) global.extractedCount = 0;
-    global.extractedCount++;
-    if (global.extractedCount >= (ConfigService.get('MAX_TEST_BUSINESSES') as number)) {
-      logger.info(`[VERIFICATION] Successfully extracted ${global.extractedCount} businesses. Exiting gracefully.`);
-      clearInterval(global.metricsInterval);
+    extractedCount++;
+    if (extractedCount >= (ConfigService.get('MAX_TEST_BUSINESSES') as number)) {
+      logger.info(`[VERIFICATION] Successfully extracted ${extractedCount} businesses. Exiting gracefully.`);
+      if (metricsInterval) clearInterval(metricsInterval);
       process.exit(0);
     }
   });
 
   // Track Metrics
-  global.metricsInterval = setInterval(async () => {
+  metricsInterval = setInterval(async () => {
     const mem = process.memoryUsage();
     logger.info({
       rss: Math.round(mem.rss / 1024 / 1024) + 'MB',
@@ -134,7 +136,7 @@ async function bootstrap() {
     logger.error({ err: error }, "Failed to execute engine");
     EventBus.publish(EventTypes.JobFailed, { error });
   } finally {
-    if (global.metricsInterval) clearInterval(global.metricsInterval);
+    if (metricsInterval) clearInterval(metricsInterval);
     await browserManager.closeBrowser();
     logger.info("Graceful shutdown complete.");
   }
