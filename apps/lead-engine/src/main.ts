@@ -6,7 +6,7 @@ import { GoogleMapsProvider } from './providers/google-maps/GoogleMapsProvider';
 import { ProgressTracker } from './core/progress/ProgressTracker';
 import { EventBus, EventTypes } from './core/events/EventBus';
 import { MemoryQueue } from '@lead-platform/queue';
-import { ExtractionJob, JobStatus } from '@lead-platform/types';
+import { ExtractionJob, ExtractionJobStatus } from '@lead-platform/types';
 import { WorkerPool } from './core/workers/WorkerPool';
 
 // Milestone 8 Imports
@@ -55,7 +55,7 @@ async function bootstrap() {
       workerSnapshot: {}
     });
     
-    job.status = JobStatus.COMPLETED;
+    job.status = ExtractionJobStatus.COMPLETED;
   });
 
   // Track Metrics

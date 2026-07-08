@@ -1,4 +1,4 @@
-export enum JobStatus {
+export enum ExtractionJobStatus {
   DISCOVERED = 'DISCOVERED',
   QUEUED = 'QUEUED',
   PROCESSING = 'PROCESSING',
@@ -16,7 +16,7 @@ export interface ExtractionJob {
   url: string;
   provider: string;
   keyword: string;
-  status: JobStatus;
+  status: ExtractionJobStatus;
   attempts: number;
   discoveredAt: Date;
   priority: number;

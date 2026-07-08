@@ -4,7 +4,7 @@ import { ResultValidator } from './ResultValidator';
 import { ResultCache } from './ResultCache';
 import { EventBus, EventTypes } from '../../../core/events/EventBus';
 import { Queue } from '@lead-platform/queue';
-import { ExtractionJob, JobStatus } from '@lead-platform/types';
+import { ExtractionJob, ExtractionJobStatus } from '@lead-platform/types';
 import crypto from 'crypto';
 
 export class ResultCollector {
@@ -35,7 +35,7 @@ export class ResultCollector {
             url: normalizedUrl,
             provider: 'google-maps',
             keyword: this.keyword,
-            status: JobStatus.DISCOVERED,
+            status: ExtractionJobStatus.DISCOVERED,
             attempts: 0,
             discoveredAt: new Date(),
             priority: 1
@@ -44,7 +44,7 @@ export class ResultCollector {
           EventBus.publish(EventTypes.UrlCollected, { url: normalizedUrl });
           
           // Stream it immediately to Queue
-          job.status = JobStatus.QUEUED;
+          job.status = ExtractionJobStatus.QUEUED;
           await this.queue.enqueue(job);
           
         } else {

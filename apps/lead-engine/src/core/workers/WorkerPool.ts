@@ -1,5 +1,5 @@
 import { Queue } from '@lead-platform/queue';
-import { ExtractionJob, JobStatus } from '@lead-platform/types';
+import { ExtractionJob, ExtractionJobStatus } from '@lead-platform/types';
 import { BusinessExtractionEngine } from '../../providers/google-maps/extractors/BusinessExtractionEngine';
 import { BrowserContext } from 'playwright';
 import { PageManager } from '../browser/PageManager';
@@ -47,7 +47,7 @@ export class WorkerPool {
         continue;
       }
 
-      job.status = JobStatus.PROCESSING;
+      job.status = ExtractionJobStatus.PROCESSING;
       logger.info(`Worker ${workerId} processing ${job.url}`);
       
       try {
@@ -55,21 +55,21 @@ export class WorkerPool {
         const data = await engine.processUrl(job.url);
         
         if (data) {
-          job.status = JobStatus.VALIDATED;
+          job.status = ExtractionJobStatus.VALIDATED;
           job.data = data;
           EventBus.publish(EventTypes.BusinessExtracted, job); // Repository listens to this to SAVE
         } else {
-          job.status = JobStatus.FAILED;
+          job.status = ExtractionJobStatus.FAILED;
           job.lastError = "Extraction returned null";
         }
       } catch (err: any) {
         job.attempts++;
         job.lastError = err.message;
         if (job.attempts < 3) {
-          job.status = JobStatus.RETRYING;
+          job.status = ExtractionJobStatus.RETRYING;
           await this.queue.enqueue(job); // Retry
         } else {
-          job.status = JobStatus.FAILED_PERMANENT;
+          job.status = ExtractionJobStatus.FAILED_PERMANENT;
         }
         logger.error({ err, url: job.url }, `Worker ${workerId} failed to process`);
       }

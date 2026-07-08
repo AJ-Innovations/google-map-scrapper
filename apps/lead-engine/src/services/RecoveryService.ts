@@ -1,7 +1,7 @@
 import { JobRepository } from '../repositories/JobRepository';
 import { CheckpointRepository } from '../repositories/CheckpointRepository';
 import { Queue } from '@lead-platform/queue';
-import { ExtractionJob, JobStatus } from '@lead-platform/types';
+import { ExtractionJob, ExtractionJobStatus } from '@lead-platform/types';
 import { EventBus, EventTypes } from '../core/events/EventBus';
 import { logger } from '../core/logger/Logger';
 
@@ -31,8 +31,8 @@ export class RecoveryService {
       
       for (const job of snapshot) {
         // Reset processing jobs back to QUEUED
-        if (job.status === JobStatus.PROCESSING) {
-          job.status = JobStatus.QUEUED;
+        if (job.status === ExtractionJobStatus.PROCESSING) {
+          job.status = ExtractionJobStatus.QUEUED;
         }
         await queue.enqueue(job);
       }
