@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  lead-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.engine

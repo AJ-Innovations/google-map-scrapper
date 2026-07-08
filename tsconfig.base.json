@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": [
+      "ES2022"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@lead-platform/config": [
+        "packages/config/src"
+      ],
+      "@lead-platform/database": [
+        "packages/database/src"
+      ],
+      "@lead-platform/shared": [
+        "packages/shared/src"
+      ],
+      "@lead-platform/types": [
+        "packages/types/src"
+      ],
+      "@lead-platform/queue": [
+        "packages/queue/src"
+      ]
+    }
+  }
+}
