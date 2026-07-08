@@ -44,6 +44,20 @@ export class JobsService {
     });
   }
 
+  async pauseJob(id: string) {
+    return this.db.job.update({
+      where: { id },
+      data: { status: 'PAUSED' },
+    });
+  }
+
+  async resumeJob(id: string) {
+    return this.db.job.update({
+      where: { id },
+      data: { status: 'QUEUED' },
+    });
+  }
+
   async retryJob(id: string) {
     const oldJob = await this.db.job.findUnique({ where: { id } });
     if (!oldJob) throw new NotFoundException('Job not found');
@@ -57,5 +71,22 @@ export class JobsService {
         status: 'QUEUED',
       },
     });
+  }
+
+  async getOverviewStats() {
+    const totalLeads = await this.db.business.count();
+    const activeJobs = await this.db.job.count({ where: { status: 'RUNNING' } });
+    
+    const completed = await this.db.job.count({ where: { status: 'COMPLETED' } });
+    const failed = await this.db.job.count({ where: { status: 'FAILED' } });
+    const successRate = (completed + failed) > 0 ? (completed / (completed + failed)) * 100 : 100;
+
+    return {
+      totalLeads,
+      activeJobs,
+      successRate: parseFloat(successRate.toFixed(1)),
+      totalLeadsTrend: 12, // Mock for now
+      successRateTrend: 1.5, // Mock for now
+    };
   }
 }
