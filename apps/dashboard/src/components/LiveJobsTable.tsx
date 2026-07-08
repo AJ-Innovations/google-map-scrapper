@@ -1,26 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
+interface JobLog {
+  id: string;
+  message: string;
+  createdAt: string;
+}
 
 interface Job {
   id: string;
   status: string;
   progress: number;
-  processedCount: number;
+  processed: number;
   totalFound: number;
-  currentBusiness: string | null;
+  logs?: JobLog[];
 }
 
 export default function LiveJobsTable() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const processedCompletedJobs = useRef(new Set<string>());
 
   useEffect(() => {
-    // Note: EventSource doesn't support withCredentials out of the box. 
-    // In a real production app with JWT cookies, you might need a polyfill 
-    // like event-source-polyfill or use websockets instead of SSE. 
-    // For this internal project, we can just hit the public/unprotected SSE endpoint
-    // since the controller doesn't seem to have a @UseGuards on the SSE endpoint (based on events.controller.ts)
     const eventSource = new EventSource("http://localhost:3001/events/stream");
 
     eventSource.onmessage = (event) => {
@@ -28,6 +32,19 @@ export default function LiveJobsTable() {
         const data = JSON.parse(event.data);
         if (data.jobs) {
           setJobs(data.jobs);
+          
+          // Check for newly completed jobs to invalidate leads
+          let hasNewCompleted = false;
+          data.jobs.forEach((job: Job) => {
+            if ((job.status === 'COMPLETED' || job.status === 'FAILED') && !processedCompletedJobs.current.has(job.id)) {
+              processedCompletedJobs.current.add(job.id);
+              hasNewCompleted = true;
+            }
+          });
+          
+          if (hasNewCompleted) {
+            queryClient.invalidateQueries({ queryKey: ["leads"] });
+          }
         }
       } catch (err) {
         console.error("Error parsing SSE data", err);
@@ -45,7 +62,7 @@ export default function LiveJobsTable() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [queryClient]);
 
   if (jobs.length === 0) {
     return (
@@ -67,7 +84,7 @@ export default function LiveJobsTable() {
             <th className="px-6 py-4 font-semibold border-b border-border-color">Job ID</th>
             <th className="px-6 py-4 font-semibold border-b border-border-color">Status</th>
             <th className="px-6 py-4 font-semibold border-b border-border-color">Progress</th>
-            <th className="px-6 py-4 font-semibold border-b border-border-color">Current Extraction</th>
+            <th className="px-6 py-4 font-semibold border-b border-border-color">Current Action</th>
           </tr>
         </thead>
         <tbody className="bg-bg-primary divide-y divide-border-color">
@@ -80,6 +97,8 @@ export default function LiveJobsTable() {
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                   job.status === 'RUNNING' ? 'bg-accent-glow text-accent-primary' :
                   job.status === 'QUEUED' ? 'bg-warning/10 text-warning' :
+                  job.status === 'COMPLETED' ? 'bg-success/10 text-success' :
+                  job.status === 'FAILED' ? 'bg-error/10 text-error' :
                   'bg-bg-tertiary text-text-secondary'
                 }`}>
                   {job.status === 'RUNNING' && (
@@ -95,19 +114,19 @@ export default function LiveJobsTable() {
                 <div className="flex flex-col gap-1.5 w-full max-w-[200px]">
                   <div className="flex justify-between text-xs font-medium text-text-secondary">
                     <span>{job.progress}%</span>
-                    <span>{job.processedCount} / {job.totalFound || '-'}</span>
+                    <span>{job.processed} / {job.totalFound || '-'}</span>
                   </div>
                   <div className="w-full bg-bg-tertiary rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-accent-primary h-1.5 rounded-full transition-all duration-500 ease-out" 
+                      className={`${job.status === 'FAILED' ? 'bg-error' : job.status === 'COMPLETED' ? 'bg-success' : 'bg-accent-primary'} h-1.5 rounded-full transition-all duration-500 ease-out`} 
                       style={{ width: `${job.progress}%` }}
                     ></div>
                   </div>
                 </div>
               </td>
               <td className="px-6 py-4 text-sm text-text-secondary">
-                <div className="max-w-[300px] truncate">
-                  {job.currentBusiness || <span className="italic">Starting...</span>}
+                <div className="max-w-[300px] truncate" title={job.logs?.[0]?.message}>
+                  {job.logs && job.logs.length > 0 ? job.logs[0].message : <span className="italic">Starting...</span>}
                 </div>
               </td>
             </tr>
