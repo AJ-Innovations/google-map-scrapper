@@ -5,11 +5,11 @@ import { DatabaseService } from '../database/database.service';
 export class JobsService {
   constructor(private db: DatabaseService) {}
 
-  async createJob(userId: string, data: { keyword: string; location?: string; options?: any }) {
+  async createJob(data: { keyword: string; location?: string; options?: any }) {
     return this.db.job.create({
       data: {
-        userId,
         keyword: data.keyword,
+        provider: 'google-maps',
         location: data.location,
         options: data.options || {},
         status: 'QUEUED',
@@ -17,11 +17,9 @@ export class JobsService {
     });
   }
 
-  async getJobs(userId?: string) {
+  async getJobs() {
     return this.db.job.findMany({
-      where: userId ? { userId } : {},
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { email: true } } },
     });
   }
 
@@ -42,17 +40,18 @@ export class JobsService {
   async cancelJob(id: string) {
     return this.db.job.update({
       where: { id },
-      data: { status: 'CANCELLED', cancelledAt: new Date() },
+      data: { status: 'CANCELLED' },
     });
   }
-  async retryJob(userId: string, id: string) {
+
+  async retryJob(id: string) {
     const oldJob = await this.db.job.findUnique({ where: { id } });
     if (!oldJob) throw new NotFoundException('Job not found');
 
     return this.db.job.create({
       data: {
-        userId: userId || null,
         keyword: oldJob.keyword,
+        provider: oldJob.provider || 'google-maps',
         location: oldJob.location,
         options: oldJob.options || {},
         status: 'QUEUED',
