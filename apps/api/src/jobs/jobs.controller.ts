@@ -10,16 +10,12 @@ export class JobsController {
 
   @Post()
   createJob(@Req() req: Request, @Body() body: { keyword: string; location?: string; options?: any }) {
-    const user = req.user as any;
-    return this.jobsService.createJob(user.id, body);
+    return this.jobsService.createJob(body);
   }
 
   @Get()
   getJobs(@Req() req: Request) {
-    const user = req.user as any;
-    // Admins can see all jobs, normal users see only theirs
-    const userId = user.role === 'ADMIN' ? undefined : user.id;
-    return this.jobsService.getJobs(userId);
+    return this.jobsService.getJobs();
   }
 
   @Get(':id')
@@ -34,7 +30,6 @@ export class JobsController {
 
   @Post(':id/retry')
   retryJob(@Req() req: Request, @Param('id') id: string) {
-    const user = req.user as any;
-    return this.jobsService.retryJob(user.id, id);
+    return this.jobsService.retryJob(id);
   }
 }
