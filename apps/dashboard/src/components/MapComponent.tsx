@@ -67,7 +67,13 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
       try {
         // Step 1: Always get the location bounding box via Nominatim
         const locationRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationQuery)}&limit=1`);
-        const locationData = await locationRes.json();
+        if (!locationRes.ok) {
+          console.warn(`Nominatim HTTP error! status: ${locationRes.status}`);
+          setMarkers([]);
+          return;
+        }
+        const locationText = await locationRes.text();
+        const locationData = JSON.parse(locationText);
 
         if (locationData && locationData.length > 0) {
           const loc = locationData[0];
@@ -86,7 +92,13 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
             const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
             
             const overpassRes = await fetch(overpassUrl);
-            const overpassData = await overpassRes.json();
+            if (!overpassRes.ok) {
+              console.warn(`Overpass HTTP error! status: ${overpassRes.status}`);
+              setMarkers([]);
+              return;
+            }
+            const overpassText = await overpassRes.text();
+            const overpassData = JSON.parse(overpassText);
             
             if (overpassData.elements && overpassData.elements.length > 0) {
               const newMarkers = overpassData.elements.map((el: any) => ({
@@ -103,7 +115,13 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
             // Fallback: Nominatim combined text search (e.g., custom keywords)
             const query = `${keywordQuery} in ${locationQuery}`;
             const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`);
-            const fallbackData = await fallbackRes.json();
+            if (!fallbackRes.ok) {
+              console.warn(`Fallback Nominatim HTTP error! status: ${fallbackRes.status}`);
+              setMarkers([]);
+              return;
+            }
+            const fallbackText = await fallbackRes.text();
+            const fallbackData = JSON.parse(fallbackText);
             
             if (fallbackData && fallbackData.length > 0) {
               const newMarkers = fallbackData.map((item: any) => ({
@@ -120,7 +138,7 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
           }
         }
       } catch (error) {
-        console.error("Failed to geocode location:", error);
+        console.warn("Failed to geocode location:", error);
       } finally {
         setIsGeocoding(false);
       }
