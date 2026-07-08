@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import { Inter } from "next/font/google";
 import Link from "next/link";
+import "./globals.css";
+import { Providers } from "@/components/Providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
-  title: "Lead Platform",
-  description: "Internal Lead Generation and Management Platform",
+  title: "Lead Collection Platform",
+  description: "Internal lead extraction engine dashboard",
 };
 
 export default function RootLayout({
@@ -13,39 +20,69 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body suppressHydrationWarning>
-        <div className="flex h-screen w-screen overflow-hidden font-sans bg-bg-primary text-text-primary">
-          <aside className="w-[280px] bg-bg-secondary border-r border-border-color flex flex-col p-6 z-10">
-            <div className="text-xl font-bold mb-8 flex items-center gap-2">
-              <span className="text-accent-primary">⚡</span> Lead Platform
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased bg-bg-primary text-text-primary min-h-screen flex selection:bg-accent-primary/30`} suppressHydrationWarning>
+        <Providers>
+          {/* Sidebar Navigation */}
+          <aside className="w-64 border-r border-border-color bg-bg-secondary flex flex-col shrink-0 sticky top-0 h-screen z-10 shadow-sm">
+            <div className="h-16 flex items-center px-6 border-b border-border-color">
+              <span className="font-bold text-lg flex items-center gap-2">
+                <span className="text-accent-primary">⚡</span> Lead Platform
+              </span>
             </div>
-            <nav className="flex flex-col gap-2">
-              <Link href="/" className="px-4 py-3 rounded-md font-medium transition-colors duration-150 flex items-center gap-3 bg-accent-glow text-accent-primary">
-                Dashboard
+            
+            <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-1.5">
+              <Link href="/" className="px-3 py-2.5 rounded-lg text-sm font-medium text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-3">
+                <span className="text-text-muted">📊</span> Dashboard
               </Link>
-              <Link href="/jobs/new" className="px-4 py-3 rounded-md font-medium transition-colors duration-150 flex items-center gap-3 text-text-secondary hover:bg-bg-tertiary hover:text-text-primary">
-                New Search
+              
+              <div className="mt-4 mb-2 px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Scraping Engine</div>
+              
+              <Link href="/jobs/new" className="px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-3">
+                <span className="text-text-muted">🔍</span> New Search
               </Link>
-              <Link href="/leads" className="px-4 py-3 rounded-md font-medium transition-colors duration-150 flex items-center gap-3 text-text-secondary hover:bg-bg-tertiary hover:text-text-primary">
-                Leads CRM
+              
+              <div className="mt-4 mb-2 px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Management</div>
+              
+              <Link href="/leads" className="px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-3">
+                <span className="text-text-muted">👥</span> Leads CRM
               </Link>
             </nav>
-          </aside>
-          
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <header className="h-[70px] border-b border-border-color bg-glass-bg backdrop-blur-md flex items-center justify-between px-8 z-10">
-              <div className="text-text-secondary">Welcome, Admin</div>
-            </header>
             
-            <div className="flex-1 overflow-y-auto p-8 bg-bg-primary">
-              {children}
+            <div className="p-4 border-t border-border-color">
+              <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-color">
+                <div className="w-8 h-8 rounded-full bg-accent-primary text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                  AD
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">Admin User</span>
+                  <span className="text-xs text-text-muted">System Admin</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col min-w-0 bg-glass-bg">
+            <header className="h-16 border-b border-border-color bg-bg-primary/80 backdrop-blur-md sticky top-0 z-10 px-8 flex items-center justify-between">
+              <div className="text-sm font-medium text-text-secondary">
+                Connected to Engine
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
+                </span>
+                <span className="text-sm text-text-secondary font-medium">System Online</span>
+              </div>
+            </header>
+            <div className="flex-1 p-8 overflow-y-auto">
+              <div className="max-w-7xl mx-auto w-full">
+                {children}
+              </div>
             </div>
           </main>
-        </div>
+        </Providers>
       </body>
     </html>
   );

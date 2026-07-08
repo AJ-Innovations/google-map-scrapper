@@ -1,49 +1,59 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { toast } from "react-hot-toast";
+
+const jobSchema = z.object({
+  keyword: z.string().min(1, "Search keyword is required"),
+  location: z.string().optional(),
+});
+
+type JobForm = z.infer<typeof jobSchema>;
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [keyword, setKeyword] = useState("");
-  const [location, setLocation] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<JobForm>({
+    resolver: zodResolver(jobSchema),
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch("http://localhost:3001/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          keyword,
-          location: location || undefined,
-          options: {},
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Unauthorized. Please log in first.");
+  const createJobMutation = useMutation({
+    mutationFn: async (data: JobForm) => {
+      const response = await api.post("/jobs", {
+        keyword: data.keyword,
+        location: data.location || undefined,
+        options: {
+          category: data.keyword,
+          location: data.location || "Global",
+          maxResults: 500,
+          headless: true,
+          concurrency: 5
         }
-        throw new Error("Failed to create job.");
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Job started successfully!");
+      router.push("/");
+    },
+    onError: (error: any) => {
+      if (error.response?.status === 401) {
+        toast.error("Unauthorized. Please log in first.");
+        router.push("/login");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to create job.");
       }
-
-      const job = await response.json();
-      router.push(`/`);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-8">
@@ -52,13 +62,7 @@ export default function NewJobPage() {
         <p className="text-text-secondary">Start a new Playwright scraping job on the lead engine.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-bg-secondary border border-border-color rounded-2xl p-8 flex flex-col gap-6 shadow-sm">
-        {error && (
-          <div className="bg-error/10 text-error border border-error/20 p-4 rounded-lg text-sm font-medium">
-            {error}
-          </div>
-        )}
-
+      <form onSubmit={handleSubmit((data) => createJobMutation.mutate(data))} className="bg-bg-secondary border border-border-color rounded-2xl p-8 flex flex-col gap-6 shadow-sm">
         <div className="flex flex-col gap-2">
           <label htmlFor="keyword" className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
             Search Keyword (Required)
@@ -66,12 +70,13 @@ export default function NewJobPage() {
           <input
             id="keyword"
             type="text"
-            required
             placeholder="e.g. Plumbers, Real Estate Agents, Software Companies"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full bg-bg-primary border border-border-color rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
+            {...register("keyword")}
+            className={`w-full bg-bg-primary border rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors ${
+              errors.keyword ? "border-error focus:border-error focus:ring-error" : "border-border-color focus:border-accent-primary focus:ring-accent-primary"
+            }`}
           />
+          {errors.keyword && <span className="text-xs text-error font-medium">{errors.keyword.message}</span>}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -82,18 +87,20 @@ export default function NewJobPage() {
             id="location"
             type="text"
             placeholder="e.g. New York, London, Remote"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full bg-bg-primary border border-border-color rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
+            {...register("location")}
+            className={`w-full bg-bg-primary border rounded-lg px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 transition-colors ${
+              errors.location ? "border-error focus:border-error focus:ring-error" : "border-border-color focus:border-accent-primary focus:ring-accent-primary"
+            }`}
           />
+          {errors.location && <span className="text-xs text-error font-medium">{errors.location.message}</span>}
         </div>
 
         <button
           type="submit"
-          disabled={loading || !keyword}
+          disabled={createJobMutation.isPending}
           className="mt-4 bg-accent-primary hover:bg-accent-hover text-white font-medium px-6 py-3 rounded-lg transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? (
+          {createJobMutation.isPending ? (
             <>
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
