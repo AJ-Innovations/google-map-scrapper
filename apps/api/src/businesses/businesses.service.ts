@@ -29,7 +29,6 @@ export class BusinessesService {
   async getBusiness(id: string) {
     const business = await this.db.business.findUnique({
       where: { id },
-      include: { notes: true, tags: true },
     });
     if (!business) throw new NotFoundException('Business not found');
     return business;
@@ -40,30 +39,5 @@ export class BusinessesService {
       where: { id },
       data,
     });
-  }
-
-  async assignUser(id: string, userId: string | null) {
-    return this.db.business.update({
-      where: { id },
-      data: { assignedUserId: userId },
-    });
-  }
-
-  async addNote(id: string, userId: string, content: string) {
-    return this.db.businessNote.create({
-      data: {
-        businessId: id,
-        userId,
-        content,
-      },
-    });
-  }
-
-  async setTags(id: string, tags: string[]) {
-    // For simplicity, assuming tags exist. A real system would upsert tags.
-    // Assuming tags are a string array on business directly, but it's a relation.
-    // Since tags are BusinessTag models, this logic would link them.
-    // Simplified for now.
-    return { success: true, message: 'Not fully implemented in schema yet' };
   }
 }
