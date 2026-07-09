@@ -1,3 +1,4 @@
+import prisma from '@lead-platform/database';
 import { Queue } from '@lead-platform/queue';
 import { ExtractionJob, ExtractionJobStatus } from '@lead-platform/types';
 import { BusinessExtractionEngine } from '../../providers/google-maps/extractors/BusinessExtractionEngine';
@@ -57,6 +58,17 @@ export class WorkerPool {
       logger.info(`Worker ${workerId} processing ${job.url}`);
       
       try {
+        // Pre-Check Filter: Instantly skip if it already exists in the database
+        const existing = await prisma.business.findUnique({
+          where: { googleMapsUrl: job.url }
+        });
+
+        if (existing) {
+          logger.info(`Worker ${workerId} skipping duplicate: ${job.url}`);
+          job.status = ExtractionJobStatus.VALIDATED;
+          continue;
+        }
+
         const engine = new BusinessExtractionEngine(page, job.keyword);
         const data = await engine.processUrl(job.url);
         
