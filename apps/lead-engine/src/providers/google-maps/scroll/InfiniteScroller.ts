@@ -11,8 +11,8 @@ import { logger } from '../../../core/logger/Logger';
 export class InfiniteScroller {
   constructor(private page: Page, private collector: ResultCollector, private queue: Queue<ExtractionJob>) {}
 
-  async scrollUntilComplete(): Promise<void> {
-    const maxResults = Number(ConfigService.get('MAX_RESULTS'));
+  async scrollUntilComplete(maxResultsOverride?: number): Promise<void> {
+    const maxResults = maxResultsOverride || Number(ConfigService.get('MAX_RESULTS'));
     const scrollStep = Number(ConfigService.get('SCROLL_STEP'));
     const scrollDelay = Number(ConfigService.get('SCROLL_DELAY'));
     const maxIdleScrolls = Number(ConfigService.get('MAX_IDLE_SCROLLS'));

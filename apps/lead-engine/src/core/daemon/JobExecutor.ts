@@ -45,6 +45,7 @@ export class JobExecutor {
       const options = (job.options as any) || {};
       const headless = options.headless !== undefined ? options.headless : true;
       const concurrency = options.concurrency || 3;
+      const maxResults = options.maxResults;
       
       await jobLogger.info('Initializing browser...');
       const browser = await browserManager.initialize({ headless });
@@ -63,7 +64,7 @@ export class JobExecutor {
       
       await jobLogger.info(`Searching for ${job.keyword} in ${job.location || 'Unknown'}`);
       await mapsProvider.search(job.keyword, job.location || "");
-      await mapsProvider.collectUrls(); 
+      await mapsProvider.collectUrls(maxResults); 
       
       // Wait for queue to drain
       while (await extractionQueue.size() > 0) {

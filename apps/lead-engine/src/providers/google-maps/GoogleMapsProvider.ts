@@ -34,13 +34,13 @@ export class GoogleMapsProvider extends BaseProvider {
     await this.navigator.waitForResults();
   }
 
-  async collectUrls(): Promise<string[]> {
+  async collectUrls(maxResults?: number): Promise<string[]> {
     if (!this.page) throw new Error("Browser page not initialized");
     
     const collector = new ResultCollector(this.page, this.resultCache, this.queue, this.keyword);
     const scroller = new InfiniteScroller(this.page, collector, this.queue);
     
-    await scroller.scrollUntilComplete();
+    await scroller.scrollUntilComplete(maxResults);
     return []; // We no longer return URLs synchronously. They are in the queue.
   }
 
