@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { JobsModule } from './jobs/jobs.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { EventsModule } from './events/events.module';
+import { AdminModule } from './admin/admin.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -16,6 +17,7 @@ import { ConfigModule } from '@nestjs/config';
     JobsModule,
     BusinessesModule,
     EventsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
