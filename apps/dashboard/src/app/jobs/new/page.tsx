@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
@@ -11,7 +11,7 @@ import { toast } from "react-hot-toast";
 import { useState, useRef, useEffect } from "react";
 import {
   Wrench, Home, Monitor, Utensils, Stethoscope, Briefcase,
-  ChevronDown, Settings2, Zap, Building2, GraduationCap,
+  ChevronDown, Zap, Building2, GraduationCap,
   Dumbbell, Scissors, Car, Pill, Megaphone, BedDouble,
   Landmark, ShoppingCart, Search, MapPin, Gauge
 } from "lucide-react";
@@ -36,18 +36,17 @@ const BUSINESS_CATEGORIES = [
 ];
 
 const PRESET_LIMITS = [
-  { value: 50, label: "50 Leads", sub: "Quick Test" },
-  { value: 100, label: "100 Leads", sub: "Standard" },
-  { value: 500, label: "500 Leads", sub: "Deep Search" },
-  { value: 2000, label: "2000 Leads", sub: "Maximum" },
+  { value: 50, label: "50 Leads", sub: "Quick Test", estTime: "~1 min" },
+  { value: 100, label: "100 Leads", sub: "Standard", estTime: "~2 mins" },
+  { value: 250, label: "250 Leads", sub: "Popular", estTime: "~4 mins" },
+  { value: 500, label: "500 Leads", sub: "Deep Search", estTime: "~8 mins" },
+  { value: 1000, label: "1000 Leads", sub: "Maximum", estTime: "~15 mins" },
 ];
 
 const jobSchema = z.object({
   keyword: z.string().min(1, "Search keyword is required"),
   location: z.string().min(1, "Location is required for targeted scraping"),
-  maxResults: z.number().min(10).max(5000),
-  concurrency: z.number().min(1).max(20),
-  headless: z.boolean(),
+  maxResults: z.number().min(10).max(1000, "Maximum limit is 1000 leads"),
 });
 
 type JobForm = z.infer<typeof jobSchema>;
@@ -56,8 +55,8 @@ const DynamicMap = dynamic(() => import("@/components/MapComponent"), { ssr: fal
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isCustomQuota, setIsCustomQuota] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -72,8 +71,6 @@ export default function NewJobPage() {
       keyword: "",
       location: "",
       maxResults: 100,
-      concurrency: 5,
-      headless: true
     }
   });
 
@@ -101,8 +98,8 @@ export default function NewJobPage() {
           category: data.keyword,
           location: data.location,
           maxResults: data.maxResults,
-          headless: data.headless,
-          concurrency: data.concurrency
+          headless: true, // Defaulting to true as requested to remove from UI
+          concurrency: 5 // Defaulting to 5 as requested to remove from UI
         }
       });
       return response.data;
@@ -126,225 +123,207 @@ export default function NewJobPage() {
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto flex flex-col h-full gap-6">
-      <div className="text-center py-10 flex flex-col gap-4 relative overflow-hidden rounded-3xl bg-gradient-to-br from-bg-secondary via-bg-canvas to-bg-secondary border border-border-color shadow-sm">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] z-0 pointer-events-none"></div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight z-10 text-text-primary">
-          Find your next <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-cyan-400">Target Audience</span>
-        </h1>
-        <p className="text-text-secondary text-lg max-w-2xl mx-auto z-10 font-medium">
-          Initialize the deep-extraction engine to discover high-quality business leads instantly.
-        </p>
-      </div>
+    <div className="max-w-[1400px] mx-auto flex flex-col h-[calc(100vh-176px)] overflow-hidden gap-4">
+      <form onSubmit={handleSubmit((data) => createJobMutation.mutate(data))} className="flex flex-col gap-4 h-full">
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* Main Form Area */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <form onSubmit={handleSubmit((data) => createJobMutation.mutate(data))} className="flex flex-col gap-6">
-            
-            {/* The Hero Search Box */}
-            <div className="bg-bg-canvas border border-border-color shadow-xl rounded-[2rem] p-4 flex flex-col md:flex-row gap-4 relative z-20">
-              
-              {/* Keyword Input */}
-              <div className="flex-1 flex flex-col relative" ref={dropdownRef}>
-                <div className="flex items-center px-4 py-3 bg-bg-secondary hover:bg-bg-tertiary transition-colors rounded-2xl border border-transparent focus-within:border-accent-primary/50 focus-within:bg-bg-canvas group cursor-text">
-                  <Search className="text-text-muted group-focus-within:text-accent-primary shrink-0 mr-3 transition-colors" size={24} />
-                  <div className="flex flex-col flex-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest select-none">What</label>
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      placeholder="e.g. Plumbers, Software..."
-                      {...register("keyword")}
-                      onClick={() => setIsDropdownOpen(true)}
-                      onFocus={() => setIsDropdownOpen(true)}
-                      className="w-full bg-transparent text-lg font-bold text-text-primary placeholder:text-text-muted/50 focus:outline-none"
-                    />
-                  </div>
-                  <ChevronDown size={20} className={`text-text-muted transition-transform duration-200 cursor-pointer ${isDropdownOpen ? "rotate-180" : ""}`} onClick={() => setIsDropdownOpen(!isDropdownOpen)} />
-                </div>
-                {errors.keyword && <span className="absolute -bottom-5 left-4 text-[11px] text-error font-bold">{errors.keyword.message}</span>}
+        {/* The Hero Search Box (Top) - Pill Shaped, Shorter, White BG Inputs */}
+        <div className="bg-bg-canvas rounded-full p-2 flex flex-col md:flex-row gap-2 relative z-20 items-center shrink-0">
 
-                {/* Dropdown for Keyword */}
-                {isDropdownOpen && (
-                  <div className="absolute top-[80px] left-0 right-0 bg-bg-canvas/95 backdrop-blur-xl border border-border-color/50 rounded-2xl shadow-2xl z-30 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 p-2">
-                    {filteredCategories.length > 0 ? (
-                      <div className="flex flex-col gap-1">
-                        {filteredCategories.map((category) => (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => {
-                              setValue("keyword", category.label, { shouldValidate: true });
-                              setIsDropdownOpen(false);
-                            }}
-                            className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-accent-primary/10 text-left transition-all w-full group"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-bg-tertiary flex items-center justify-center text-text-secondary group-hover:bg-accent-primary group-hover:text-white transition-all shadow-sm">
-                              {category.icon}
-                            </div>
-                            <span className="font-bold text-text-primary group-hover:text-accent-primary transition-colors text-base">{category.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-8 text-center text-text-secondary flex flex-col items-center gap-2">
-                        <Search size={24} className="opacity-20" />
-                        <span className="text-sm font-medium">Press enter to search for "{keywordValue}"</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {/* Keyword Input */}
+          <div className="flex-1 flex flex-col relative w-full" ref={dropdownRef}>
+            <div className="flex items-center px-6 py-2 bg-white hover:bg-gray-50 transition-all rounded-full border border-gray-200 hover:border-accent-primary/40 focus-within:border-accent-primary focus-within:ring-1 focus-within:ring-accent-primary/10 focus-within:bg-white group cursor-text h-14">
+              <Search className="text-gray-400 group-focus-within:text-accent-primary shrink-0 mr-3 transition-colors" size={20} />
+              <div className="flex flex-col flex-1 justify-center">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="What? (e.g. Plumbers, Software...)"
+                  {...register("keyword")}
+                  onClick={() => setIsDropdownOpen(true)}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  className="w-full bg-transparent text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                />
               </div>
+              <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 cursor-pointer ${isDropdownOpen ? "rotate-180" : ""}`} onClick={() => setIsDropdownOpen(!isDropdownOpen)} />
+            </div>
+            {errors.keyword && <span className="absolute -bottom-5 left-6 text-[10px] text-error font-bold">{errors.keyword.message}</span>}
 
-              {/* Divider (Desktop) */}
-              <div className="hidden md:block w-[1px] bg-border-color/50 my-2 mx-1 self-stretch"></div>
-
-              {/* Location Input */}
-              <div className="flex-1 flex flex-col relative">
-                <div className="flex items-center px-4 py-3 bg-bg-secondary hover:bg-bg-tertiary transition-colors rounded-2xl border border-transparent focus-within:border-accent-primary/50 focus-within:bg-bg-canvas group cursor-text">
-                  <MapPin className="text-text-muted group-focus-within:text-accent-primary shrink-0 mr-3 transition-colors" size={24} />
-                  <div className="flex flex-col flex-1">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-widest select-none">Where</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. New York, Dubai..."
-                      {...register("location")}
-                      className="w-full bg-transparent text-lg font-bold text-text-primary placeholder:text-text-muted/50 focus:outline-none"
-                    />
+            {/* Dropdown for Keyword */}
+            {isDropdownOpen && (
+              <div className="absolute top-[65px] left-0 right-0 bg-white border border-gray-200 rounded-3xl shadow-xl z-30 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200 p-2">
+                {filteredCategories.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
+                    {filteredCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          setValue("keyword", category.label, { shouldValidate: true });
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-2xl hover:bg-accent-primary/5 text-left transition-all w-full group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-accent-primary group-hover:border-accent-primary group-hover:text-white transition-all">
+                          {category.icon}
+                        </div>
+                        <span className="font-semibold text-gray-700 group-hover:text-accent-primary transition-colors text-sm">{category.label}</span>
+                      </button>
+                    ))}
                   </div>
-                </div>
-                {errors.location && <span className="absolute -bottom-5 left-4 text-[11px] text-error font-bold">{errors.location.message}</span>}
-              </div>
-              
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={createJobMutation.isPending}
-                className="md:w-auto w-full bg-accent-primary hover:bg-accent-hover hover:-translate-y-1 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg hover:shadow-xl hover:shadow-accent-primary/20 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              >
-                {createJobMutation.isPending ? (
-                  <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
                 ) : (
-                  <Zap size={24} fill="currentColor" />
+                  <div className="p-6 text-center text-gray-400 flex flex-col items-center gap-2">
+                    <Search size={20} className="opacity-30" />
+                    <span className="text-xs font-medium">Press enter to search for "{keywordValue}"</span>
+                  </div>
                 )}
-                <span className="hidden md:inline">Search</span>
-              </button>
+              </div>
+            )}
+          </div>
+
+          {/* Location Input */}
+          <div className="flex-1 flex flex-col relative w-full">
+            <div className="flex items-center px-6 py-2 bg-white hover:bg-gray-50 transition-all rounded-full border border-gray-200 hover:border-accent-primary/40 focus-within:border-accent-primary focus-within:ring-1 focus-within:ring-accent-primary/10 focus-within:bg-white group cursor-text h-14">
+              <MapPin className="text-gray-400 group-focus-within:text-accent-primary shrink-0 mr-3 transition-colors" size={20} />
+              <div className="flex flex-col flex-1 justify-center">
+                <input
+                  type="text"
+                  placeholder="Where? (e.g. New York, Dubai...)"
+                  {...register("location")}
+                  className="w-full bg-transparent text-sm font-semibold text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                />
+              </div>
+            </div>
+            {errors.location && <span className="absolute -bottom-5 left-6 text-[10px] text-error font-bold">{errors.location.message}</span>}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={createJobMutation.isPending}
+            className="md:w-auto w-full bg-accent-primary hover:bg-accent-hover hover:scale-105 active:scale-95 text-white font-bold px-8 h-14 rounded-full transition-all shadow-md hover:shadow-lg hover:shadow-accent-primary/30 flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {createJobMutation.isPending ? (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <Zap size={20} fill="currentColor" className="stroke-white" />
+            )}
+            <span className="hidden md:inline">Search</span>
+          </button>
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mt-2 min-h-0 pb-2">
+
+          {/* Live Map Preview Area (Left - col-span-7) */}
+          <div className="lg:col-span-7 h-full min-h-[300px] rounded-[2rem] overflow-hidden bg-bg-canvas border border-border-color shadow-sm relative">
+            <div className="absolute inset-0 p-2 pointer-events-none">
+              <DynamicMap locationQuery={locationValue || ""} keywordQuery={keywordValue || ""} />
             </div>
 
+            <div className="absolute bottom-6 left-6 right-6 bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl p-4 rounded-3xl flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Target Zone</span>
+                <span className="text-sm font-bold text-gray-800 truncate max-w-[200px]">
+                  {locationValue || "Global"}
+                </span>
+              </div>
+              <div className="w-[1px] h-8 bg-gray-200 mx-2"></div>
+              <div className="flex flex-col gap-0.5 text-right">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Target Niche</span>
+                <span className="text-sm font-bold text-accent-primary truncate max-w-[200px]">
+                  {keywordValue || "Any Business"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Settings Area (Right - col-span-5) */}
+          <div className="lg:col-span-5 flex flex-col gap-6 h-full">
+
             {/* Quota / Limit Selector (Prominent) */}
-            <div className="bg-bg-canvas border border-border-color rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+            <div className="bg-bg-canvas border border-border-color rounded-[2rem] p-6 shadow-sm flex flex-col gap-5 h-full">
               <div className="flex items-center gap-2">
                 <Gauge size={18} className="text-accent-primary" />
                 <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Extraction Quota</h3>
               </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1 min-h-0">
                 {PRESET_LIMITS.map((preset) => {
-                  const isSelected = maxResultsValue === preset.value;
+                  const isSelected = maxResultsValue === preset.value && !isCustomQuota;
                   return (
                     <button
                       key={preset.value}
                       type="button"
-                      onClick={() => setValue("maxResults", preset.value, { shouldValidate: true })}
-                      className={`flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all ${
-                        isSelected 
-                          ? "border-accent-primary bg-accent-primary/5 shadow-md scale-[1.02]" 
-                          : "border-border-color bg-bg-secondary hover:border-accent-primary/30 hover:bg-bg-tertiary"
-                      }`}
+                      onClick={() => {
+                        setIsCustomQuota(false);
+                        setValue("maxResults", preset.value, { shouldValidate: true });
+                      }}
+                      className={`flex flex-col items-center justify-center h-full min-h-[70px] rounded-3xl border-2 transition-all ${isSelected
+                        ? "border-accent-primary bg-accent-primary shadow-lg shadow-accent-primary/20"
+                        : "border-gray-100 bg-white hover:border-accent-primary/30 hover:bg-gray-50 hover:shadow-sm"
+                        }`}
                     >
-                      <span className={`text-lg font-black ${isSelected ? "text-accent-primary" : "text-text-primary"}`}>
+                      <span className={`text-lg lg:text-xl font-black ${isSelected ? "text-white" : "text-gray-800"}`}>
                         {preset.value}
                       </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isSelected ? "text-accent-primary/80" : "text-text-muted"}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isSelected ? "text-white/80" : "text-gray-400"}`}>
                         {preset.sub}
+                      </span>
+                      <span className={`text-[9px] font-semibold mt-0.5 ${isSelected ? "text-white/60" : "text-gray-400/70"}`}>
+                        ⏱ {preset.estTime}
                       </span>
                     </button>
                   );
                 })}
-              </div>
-            </div>
 
-            {/* Advanced Settings Toggle */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-[1px] bg-border-color"></div>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-bg-secondary hover:bg-border-color transition-colors text-xs font-bold text-text-secondary uppercase tracking-widest"
-              >
-                <Settings2 size={14} />
-                {showAdvanced ? "Hide Engine Config" : "Engine Config"}
-              </button>
-              <div className="flex-1 h-[1px] bg-border-color"></div>
-            </div>
-
-            {/* Advanced Options Panel */}
-            {showAdvanced && (
-              <div className="bg-bg-secondary/50 border border-border-color rounded-3xl p-6 flex flex-col gap-6 animate-in zoom-in-95 duration-200">
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                      Scraper Concurrency
-                    </label>
-                    <span className="text-xs font-mono text-warning font-bold bg-warning/10 px-3 py-1 rounded-full">
-                      {watch("concurrency")} Workers
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-secondary font-medium">Number of parallel browser contexts. Higher is faster but uses more RAM.</p>
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    step="1"
-                    {...register("concurrency", { valueAsNumber: true })}
-                    className="w-full accent-warning h-2 bg-bg-tertiary rounded-lg appearance-none cursor-pointer mt-2"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border-color/30">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-bold text-text-primary uppercase tracking-wider">Headless Engine</label>
-                    <span className="text-xs text-text-secondary font-medium">Run Playwright invisibly in the background.</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" {...register("headless")} className="sr-only peer" />
-                    <div className="w-12 h-6 bg-bg-tertiary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary border border-border-color"></div>
-                  </label>
+                {/* Custom Quota Option */}
+                <div
+                  onClick={() => setIsCustomQuota(true)}
+                  className={`flex flex-col items-center justify-center h-full min-h-[70px] rounded-3xl border-2 transition-all p-3 cursor-pointer ${isCustomQuota
+                    ? "border-accent-primary bg-accent-primary/5 shadow-md scale-[1.02]"
+                    : "border-gray-100 bg-white hover:border-accent-primary/30 hover:bg-gray-50 hover:shadow-sm"
+                    }`}
+                >
+                  {isCustomQuota ? (
+                    <div className="flex flex-col items-center w-full gap-1.5 animate-in fade-in duration-200">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-accent-primary">Custom</span>
+                      <input
+                        type="number"
+                        min={10}
+                        max={1000}
+                        autoFocus
+                        {...register("maxResults", { valueAsNumber: true })}
+                        onInput={(e) => {
+                          const val = parseInt(e.currentTarget.value);
+                          if (val > 1000) {
+                            e.currentTarget.value = "1000";
+                            setValue("maxResults", 1000, { shouldValidate: true });
+                          }
+                        }}
+                        className="w-full bg-white border border-accent-primary/30 rounded-xl px-2 py-1.5 text-center text-base lg:text-lg font-black text-accent-primary focus:outline-none focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20 shadow-inner"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-lg lg:text-xl font-black text-gray-800">
+                        Custom
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest mt-1 text-gray-400">
+                        Any Amount
+                      </span>
+                      <span className="text-[9px] font-semibold mt-0.5 text-gray-400/70">
+                        ⏱ Variable
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-            )}
-          </form>
-        </div>
-
-        {/* Live Map Preview Area */}
-        <div className="lg:col-span-5 h-[500px] lg:h-[600px] rounded-3xl overflow-hidden bg-bg-canvas border border-border-color shadow-xl relative sticky top-6">
-          <div className="absolute inset-0 p-2 pointer-events-none">
-            <DynamicMap locationQuery={locationValue || ""} keywordQuery={keywordValue || ""} />
-          </div>
-          
-          <div className="absolute bottom-6 left-6 right-6 bg-bg-canvas/90 backdrop-blur-md border border-border-color shadow-lg p-4 rounded-2xl flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Target Zone</span>
-              <span className="text-sm font-bold text-text-primary truncate max-w-[200px]">
-                {locationValue || "Global"}
-              </span>
-            </div>
-            <div className="w-[1px] h-8 bg-border-color mx-2"></div>
-            <div className="flex flex-col gap-1 text-right">
-              <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Target Niche</span>
-              <span className="text-sm font-bold text-accent-primary truncate max-w-[200px]">
-                {keywordValue || "Any Business"}
-              </span>
             </div>
           </div>
         </div>
-
-      </div>
+      </form>
     </div>
   );
 }
