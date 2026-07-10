@@ -98,7 +98,8 @@ export default function LiveJobsTable() {
   };
 
   useEffect(() => {
-    const eventSource = new EventSource("http://localhost:3001/events/stream");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    const eventSource = new EventSource(`${apiUrl}/events/stream`);
 
     eventSource.onmessage = (event) => {
       try {
