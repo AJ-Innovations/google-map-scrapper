@@ -81,61 +81,7 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
           setCenter([parseFloat(loc.lat), parseFloat(loc.lon)]);
           setZoom(12);
 
-          const osmTag = OSM_CATEGORY_MAPPING[keywordQuery];
-
-          // Step 2: Use Overpass API if we have a tag, otherwise fallback to Nominatim text search
-          if (osmTag) {
-            const [key, value] = osmTag.split("=");
-            const bboxString = `${bb[0]},${bb[2]},${bb[1]},${bb[3]}`; // (south, west, north, east)
-            
-            const overpassQuery = `[out:json][timeout:10];(node["${key}"="${value}"](${bboxString});way["${key}"="${value}"](${bboxString}););out center 20;`;
-            const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
-            
-            const overpassRes = await fetch(overpassUrl);
-            if (!overpassRes.ok) {
-              console.warn(`Overpass HTTP error! status: ${overpassRes.status}`);
-              setMarkers([]);
-              return;
-            }
-            const overpassText = await overpassRes.text();
-            const overpassData = JSON.parse(overpassText);
-            
-            if (overpassData.elements && overpassData.elements.length > 0) {
-              const newMarkers = overpassData.elements.map((el: any) => ({
-                lat: el.lat || el.center?.lat,
-                lon: el.lon || el.center?.lon,
-                name: el.tags?.name || keywordQuery
-              })).filter((m: any) => m.lat && m.lon);
-              
-              setMarkers(newMarkers);
-            } else {
-              setMarkers([]);
-            }
-          } else if (keywordQuery) {
-            // Fallback: Nominatim combined text search (e.g., custom keywords)
-            const query = `${keywordQuery} in ${locationQuery}`;
-            const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`);
-            if (!fallbackRes.ok) {
-              console.warn(`Fallback Nominatim HTTP error! status: ${fallbackRes.status}`);
-              setMarkers([]);
-              return;
-            }
-            const fallbackText = await fallbackRes.text();
-            const fallbackData = JSON.parse(fallbackText);
-            
-            if (fallbackData && fallbackData.length > 0) {
-              const newMarkers = fallbackData.map((item: any) => ({
-                lat: parseFloat(item.lat),
-                lon: parseFloat(item.lon),
-                name: item.display_name.split(',')[0]
-              }));
-              setMarkers(newMarkers);
-            } else {
-              setMarkers([]);
-            }
-          } else {
-            setMarkers([]);
-          }
+          setMarkers([]);
         }
       } catch (error) {
         console.warn("Failed to geocode location:", error);
@@ -167,11 +113,6 @@ export default function MapComponent({ locationQuery, keywordQuery }: MapCompone
         </div>
       )}
       
-      {!isGeocoding && keywordQuery && locationQuery && markers.length === 0 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/80 text-white px-4 py-2 rounded-xl shadow-lg text-xs font-medium text-center backdrop-blur-sm max-w-[80%]">
-          Preview for <span className="font-bold text-accent-primary">{keywordQuery}</span> not available on the free map. The engine will still extract them during the job!
-        </div>
-      )}
 
       <MapContainer 
         center={center} 
