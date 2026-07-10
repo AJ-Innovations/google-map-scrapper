@@ -124,7 +124,7 @@ export default function NewJobPage() {
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto flex flex-col h-[calc(100vh-176px)] overflow-hidden gap-4">
+    <div className="max-w-[1400px] mx-auto flex flex-col h-[calc(100vh-180px)] overflow-hidden gap-4">
       <form onSubmit={handleSubmit((data) => createJobMutation.mutate(data))} className="flex flex-col gap-4 h-full">
 
         {/* The Hero Search Box (Top) - Pill Shaped, Shorter, White BG Inputs */}
@@ -301,7 +301,7 @@ export default function NewJobPage() {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-400">10</span>
                       <input
@@ -314,9 +314,8 @@ export default function NewJobPage() {
                           setIsCustomQuota(true);
                           setValue("maxResults", parseInt(e.target.value), { shouldValidate: true });
                         }}
-                        className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer transition-all ${
-                          isCustomQuota ? "bg-accent-primary/30 accent-accent-primary" : "bg-gray-200"
-                        }`}
+                        className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer transition-all ${isCustomQuota ? "bg-accent-primary/30 accent-accent-primary" : "bg-gray-200"
+                          }`}
                         style={{
                           accentColor: isCustomQuota ? 'var(--accent-primary)' : '#9ca3af'
                         }}
