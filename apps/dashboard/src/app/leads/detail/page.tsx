@@ -1,15 +1,16 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Mail, MapPin, Phone, Star } from "lucide-react";
+import { Suspense } from "react";
 
-export default function LeadDetailsPage() {
-  const params = useParams();
+function LeadDetailsContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = searchParams.get("id");
 
   const { data: lead, isLoading, error } = useQuery({
     queryKey: ["lead", id],
@@ -131,5 +132,13 @@ export default function LeadDetailsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LeadDetailsPage() {
+  return (
+    <Suspense fallback={<div className="p-20 text-center">Loading...</div>}>
+      <LeadDetailsContent />
+    </Suspense>
   );
 }
