@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -147,6 +148,8 @@ export default function ProfilePage() {
                   Coming Soon
                 </div>
               </div>
+
+              <InstallAppButton />
             </div>
           </div>
         </div>
