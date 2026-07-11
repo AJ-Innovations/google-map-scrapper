@@ -307,7 +307,7 @@ export default function LeadsPage() {
   const allCategories = useMemo(() => {
     const cats = new Set<string>();
     data?.pages.forEach(page => {
-      page.data.forEach((l: Business) => {
+      page?.data?.forEach((l: Business) => {
         if (l.category) cats.add(l.category);
       });
     });
@@ -315,7 +315,7 @@ export default function LeadsPage() {
   }, [data]);
 
   const leads = useMemo(() => {
-    return data?.pages.flatMap(page => page.data) || [];
+    return data?.pages.flatMap(page => page?.data || []) || [];
   }, [data]);
 
   const activeFilterCount = 
