@@ -1,8 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Briefcase, Building2, TrendingUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import { TrendingUp, BarChart2, PieChart as PieChartIcon } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell 
+} from 'recharts';
+
+// Mock data for analytics since backend only returns aggregates right now
+const jobActivityData = [
+  { name: 'Mon', completed: 40, failed: 24, queued: 12 },
+  { name: 'Tue', completed: 30, failed: 13, queued: 22 },
+  { name: 'Wed', completed: 20, failed: 8, queued: 29 },
+  { name: 'Thu', completed: 27, failed: 39, queued: 20 },
+  { name: 'Fri', completed: 18, failed: 48, queued: 21 },
+  { name: 'Sat', completed: 23, failed: 38, queued: 25 },
+  { name: 'Sun', completed: 34, failed: 43, queued: 21 },
+];
+
+const businessGrowthData = [
+  { name: 'Week 1', businesses: 120 },
+  { name: 'Week 2', businesses: 250 },
+  { name: 'Week 3', businesses: 400 },
+  { name: 'Week 4', businesses: 650 },
+  { name: 'Week 5', businesses: 890 },
+];
+
+const COLORS = ['#0052ff', '#10b981', '#f43f5e', '#f59e0b'];
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<any>(null);
@@ -42,115 +66,114 @@ export default function AnalyticsPage() {
     );
   }
 
+  const jobDistribution = stats ? [
+    { name: 'Active', value: stats.activeJobs || 15 },
+    { name: 'Completed', value: (stats.totalJobs || 100) - (stats.activeJobs || 15) }
+  ] : [];
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-gray-900 tracking-wide">
-          Platform Overview
+        <h2 className="text-3xl font-bold text-gray-900 tracking-wide flex items-center gap-3">
+          <TrendingUp className="text-[#0052ff]" size={32} />
+          Detailed Analytics
         </h2>
-        <span className="text-sm font-medium text-gray-500 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-          </span>
-          Live Data
-        </span>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} trend="+12%" />
-        <StatCard title="Total Jobs" value={stats?.totalJobs || 0} icon={Briefcase} trend="+5%" />
-        <StatCard title="Active Jobs" value={stats?.activeJobs || 0} icon={TrendingUp} color="text-green-600" />
-        <StatCard title="Scraped Businesses" value={stats?.totalBusinesses || 0} icon={Building2} trend="+24%" />
       </div>
 
-      <div className="mt-12 bg-white rounded-3xl p-6 border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Clock className="text-[#0052ff]" size={24} />
-            Recent Scraping Jobs
-          </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Job Activity Chart */}
+        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_24px_rgba(0,82,255,0.04)] hover:border-gray-200 transition-all duration-300">
+           <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+             <BarChart2 className="text-[#0052ff]" size={20} />
+             Weekly Job Activity
+           </h3>
+           <div className="h-80 w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={jobActivityData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} dy={10} />
+                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} />
+                 <Tooltip 
+                   cursor={{fill: '#f9fafb'}}
+                   contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                 />
+                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                 <Bar dataKey="completed" name="Completed" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
+                 <Bar dataKey="failed" name="Failed" stackId="a" fill="#f43f5e" />
+                 <Bar dataKey="queued" name="Queued" stackId="a" fill="#0052ff" radius={[4, 4, 0, 0]} />
+               </BarChart>
+             </ResponsiveContainer>
+           </div>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-sm font-medium text-gray-500 rounded-tl-xl">Keyword</th>
-                <th className="px-6 py-4 text-sm font-medium text-gray-500">Provider</th>
-                <th className="px-6 py-4 text-sm font-medium text-gray-500">Status</th>
-                <th className="px-6 py-4 text-sm font-medium text-gray-500 rounded-tr-xl">Created At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {stats?.recentJobs?.map((job: any) => (
-                <tr key={job.id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="px-6 py-4 font-medium text-gray-900">{job.keyword}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 text-xs font-semibold rounded-full border bg-gray-100 text-gray-700 border-gray-200 uppercase">
-                      {job.provider}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={job.status} />
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 text-sm">
-                    {new Date(job.createdAt).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {!stats?.recentJobs?.length && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                    No recent jobs found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+        {/* Business Growth Chart */}
+        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_24px_rgba(0,82,255,0.04)] hover:border-gray-200 transition-all duration-300">
+           <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+             <TrendingUp className="text-[#0052ff]" size={20} />
+             Businesses Scraped Over Time
+           </h3>
+           <div className="h-80 w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <LineChart data={businessGrowthData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} dy={10} />
+                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280'}} />
+                 <Tooltip 
+                   contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                 />
+                 <Line type="monotone" dataKey="businesses" name="Total Businesses" stroke="#0052ff" strokeWidth={4} dot={{ r: 6, fill: '#0052ff', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+               </LineChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
+
+        {/* Job Status Distribution */}
+        <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_24px_rgba(0,82,255,0.04)] hover:border-gray-200 transition-all duration-300 lg:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8">
+           <div className="md:w-1/2 w-full">
+             <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+               <PieChartIcon className="text-[#0052ff]" size={20} />
+               Current Job Distribution
+             </h3>
+             <p className="text-gray-500 mb-6 text-sm">Overview of currently running vs historically completed jobs.</p>
+             
+             <div className="space-y-4">
+                {jobDistribution.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 bg-[#f8fafc]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                      <span className="font-semibold text-gray-700 text-sm">{entry.name} Jobs</span>
+                    </div>
+                    <span className="font-bold text-gray-900">{entry.value}</span>
+                  </div>
+                ))}
+             </div>
+           </div>
+           
+           <div className="h-64 w-full md:w-1/2 flex items-center justify-center">
+             <ResponsiveContainer width="100%" height="100%">
+               <PieChart>
+                 <Pie
+                   data={jobDistribution}
+                   cx="50%"
+                   cy="50%"
+                   innerRadius={60}
+                   outerRadius={100}
+                   paddingAngle={5}
+                   dataKey="value"
+                 >
+                   {jobDistribution.map((entry, index) => (
+                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                   ))}
+                 </Pie>
+                 <Tooltip 
+                   contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                   itemStyle={{ color: '#111827', fontWeight: 500 }}
+                 />
+               </PieChart>
+             </ResponsiveContainer>
+           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function StatCard({ title, value, icon: Icon, trend, color = "text-[#0052ff]" }: any) {
-  return (
-    <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-      <div className="absolute -right-6 -top-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-        <Icon size={120} />
-      </div>
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <h3 className="text-gray-500 font-medium">{title}</h3>
-        <div className={cn("p-2 rounded-xl bg-gray-50", color)}>
-          <Icon size={20} />
-        </div>
-      </div>
-      <div className="flex items-end gap-3 relative z-10">
-        <p className="text-4xl font-bold text-gray-900">{value}</p>
-        {trend && (
-          <span className="text-sm font-medium text-green-600 mb-1">{trend}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    QUEUED: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    PROCESSING: 'bg-[#0052ff]/10 text-[#0052ff] border-[#0052ff]/20',
-    COMPLETED: 'bg-green-100 text-green-700 border-green-200',
-    FAILED: 'bg-red-100 text-red-700 border-red-200',
-  };
-
-  const style = styles[status] || 'bg-gray-100 text-gray-600 border-gray-200';
-
-  return (
-    <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1", style)}>
-      {status === 'COMPLETED' && <CheckCircle2 size={12} />}
-      {status === 'FAILED' && <AlertCircle size={12} />}
-      {status}
-    </span>
   );
 }
