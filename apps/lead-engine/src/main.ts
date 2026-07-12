@@ -24,6 +24,7 @@ async function processJob(job: any) {
   const options = job.options && typeof job.options === 'object' ? job.options : {};
   const headless = options.headless !== undefined ? options.headless : (ConfigService.get('HEADLESS') === 'true');
   const concurrency = options.concurrency || Number(ConfigService.get('CONCURRENCY') || 3);
+  const maxResults = options.maxResults || 10;
   
   let totalFound = 0;
   let processed = 0;
@@ -40,7 +41,7 @@ async function processJob(job: any) {
     processed++;
     
     // Calculate progress
-    const progress = totalFound > 0 ? Math.min(100, Math.round((processed / totalFound) * 100)) : 0;
+    const progress = maxResults > 0 ? Math.min(100, Math.round((processed / maxResults) * 100)) : 0;
     await jobService.updateProgress(job.id, progress, processed);
     
     if (processed % 10 === 0) {
@@ -85,8 +86,8 @@ async function processJob(job: any) {
     await jobService.log(job.id, `Searching Google Maps for "${job.keyword}" in "${job.location || 'Global'}"...`, 'INFO');
     await mapsProvider.search(job.keyword, job.location || '');
     
-    // Simulate finding total count (since GoogleMapsProvider.collectUrls() doesn't return count directly easily in this stub context, we wait)
-    await mapsProvider.collectUrls(); 
+    // Approximate total based on limit
+    await mapsProvider.collectUrls(maxResults); 
     
     // Approximate total based on queue size
     totalFound = await extractionQueue.size();
@@ -111,7 +112,37 @@ async function processJob(job: any) {
       }
     } else {
       await jobService.log(job.id, `Extraction finished. Total processed: ${processed}`, 'INFO');
-      await jobService.markJobCompleted(job.id, totalFound);
+      
+      // Refund Logic
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+      
+      const dbJob = await prisma.job.findUnique({ select: { userId: true }, where: { id: job.id } });
+      if (processed < maxResults && dbJob?.userId) {
+        const refundAmount = maxResults - processed;
+        await jobService.log(job.id, `Refunding ${refundAmount} tokens to user for unfulfilled leads.`, 'INFO');
+        
+        const wallet = await prisma.wallet.findUnique({ where: { userId: dbJob.userId } });
+        if (wallet) {
+          await prisma.$transaction([
+            prisma.wallet.update({
+              where: { id: wallet.id },
+              data: { balance: { increment: refundAmount } }
+            }),
+            prisma.walletTransaction.create({
+              data: {
+                walletId: wallet.id,
+                amount: refundAmount,
+                type: 'JOB_REFUND',
+                description: `Refund for unused tokens (${refundAmount} leads) from Job: ${job.keyword}`
+              }
+            })
+          ]);
+        }
+      }
+      await prisma.$disconnect();
+
+      await jobService.markJobCompleted(job.id, maxResults); // use maxResults as totalFound
     }
 
   } catch (error: any) {
