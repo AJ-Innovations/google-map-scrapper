@@ -5,15 +5,16 @@ import dynamic from "next/dynamic";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   Wrench, Home, Monitor, Utensils, Stethoscope, Briefcase,
   ChevronDown, Zap, Building2, GraduationCap,
   Dumbbell, Scissors, Car, Pill, Megaphone, BedDouble,
-  Landmark, ShoppingCart, Search, MapPin, Gauge, Sparkles
+  Landmark, ShoppingCart, Search, MapPin, Gauge, Sparkles, Wallet
 } from "lucide-react";
 
 const BUSINESS_CATEGORIES = [
@@ -88,7 +89,18 @@ export default function NewJobPage() {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCustomQuota, setIsCustomQuota] = useState(false);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [requiredTokens, setRequiredTokens] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: wallet } = useQuery({
+    queryKey: ['wallet', 'me'],
+    queryFn: async () => {
+      const response = await api.get('/wallet/me');
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const {
     register,
@@ -153,9 +165,19 @@ export default function NewJobPage() {
     c.label.toLowerCase().includes((keywordValue || "").toLowerCase())
   );
 
+  const onSubmit = (data: JobForm) => {
+    const currentBalance = wallet?.balance || 0;
+    if (currentBalance < data.maxResults) {
+      setRequiredTokens(data.maxResults);
+      setShowTopUpModal(true);
+      return;
+    }
+    createJobMutation.mutate(data);
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col h-auto md:h-[calc(100vh-180px)] overflow-visible md:overflow-hidden gap-4">
-      <form onSubmit={handleSubmit((data) => createJobMutation.mutate(data))} className="flex flex-col gap-4 h-full">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 h-full">
 
         {/* The Hero Search Box (Top) - Pill Shaped, Shorter, White BG Inputs */}
         <div className="bg-bg-canvas rounded-full p-2 flex flex-col md:flex-row gap-2 relative z-20 items-center shrink-0">
@@ -359,6 +381,37 @@ export default function NewJobPage() {
           </div>
         </div>
       </form>
+
+      {showTopUpModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-accent-primary/10 rounded-full flex items-center justify-center text-accent-primary">
+                <Wallet size={32} />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Insufficient Tokens</h2>
+            <p className="text-center text-gray-500 mb-8 leading-relaxed">
+              You need <span className="font-bold text-gray-700">{requiredTokens} tokens</span> to perform this search, but your wallet only has <span className="font-bold text-red-500">{wallet?.balance || 0} tokens</span> available.
+            </p>
+            <div className="flex gap-4">
+              <button 
+                type="button" 
+                onClick={() => setShowTopUpModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <Link 
+                href="/wallet/top-up"
+                className="flex-1 py-3 px-4 rounded-xl bg-accent-primary text-white font-bold hover:bg-accent-hover transition-colors text-center shadow-lg shadow-accent-primary/20 flex items-center justify-center"
+              >
+                Top Up Now
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
