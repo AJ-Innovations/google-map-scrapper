@@ -10,7 +10,7 @@ import crypto from 'crypto';
 export class ResultCollector {
   constructor(private page: Page, private cache: ResultCache, private queue: Queue<ExtractionJob>, private keyword: string) {}
 
-  async collectCurrentBatch(): Promise<string[]> {
+  async collectCurrentBatch(limit?: number): Promise<string[]> {
     const collectedInBatch: string[] = [];
     
     const hrefs = await this.page.evaluate((selector) => {
@@ -25,6 +25,9 @@ export class ResultCollector {
 
     for (const rawUrl of hrefs) {
       if (ResultValidator.isValid(rawUrl)) {
+        if (limit && collectedInBatch.length >= limit) {
+          break;
+        }
         const normalizedUrl = ResultValidator.normalize(rawUrl);
         
         if (this.cache.add(normalizedUrl)) {
