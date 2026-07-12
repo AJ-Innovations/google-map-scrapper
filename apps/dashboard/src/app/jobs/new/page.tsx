@@ -54,29 +54,37 @@ const jobSchema = z.object({
 const AISearchIcon = ({ className, size = 32 }: { className?: string; size?: number }) => (
   <svg width={size} height={size} viewBox="2 -2 38 44" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     {/* Broken Glass Circle */}
-    <path 
-      d="M 26.74 17.65 A 12 12 0 1 1 18.49 11.26" 
-      stroke="currentColor" 
-      strokeWidth="4" 
-      strokeLinecap="round" 
+    <path
+      d="M 30.48 19.13 A 15 15 0 1 1 19.87 8.52"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
     />
+    {/* AI Text in Center */}
+    <text
+      x="16"
+      y="24"
+      fontSize="13"
+      fontWeight="900"
+      fill="currentColor"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      style={{ fontFamily: 'inherit' }}
+    >
+      AI
+    </text>
     {/* Long Handle */}
-    <path 
-      d="M 24.48 31.48 L 33 40" 
-      stroke="currentColor" 
-      strokeWidth="4" 
-      strokeLinecap="round" 
+    <path
+      d="M 26.6 33.6 L 33 40"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
     />
     {/* Large Sparkle */}
-    <path 
-      d="M 29 3 Q 29 12 38 12 Q 29 12 29 21 Q 29 12 20 12 Q 29 12 29 3 Z" 
-      fill="#FDE047" 
+    <path
+      d="M 27 3 Q 27 12 36 12 Q 27 12 27 21 Q 27 12 18 12 Q 27 12 27 3 Z"
+      fill="#00c3ffff"
       className="animate-pulse"
-    />
-    {/* Small Sparkle */}
-    <path 
-      d="M 19 0 Q 19 6 25 6 Q 19 6 19 12 Q 19 6 13 6 Q 19 6 19 0 Z" 
-      fill="currentColor" 
     />
   </svg>
 );
@@ -261,7 +269,7 @@ export default function NewJobPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              <AISearchIcon size={32} className="text-white" />
+              <AISearchIcon size={32} className="text-white mb-2" />
             )}
             <span className="hidden md:inline">Search</span>
           </button>
@@ -395,14 +403,14 @@ export default function NewJobPage() {
               You need <span className="font-bold text-gray-700">{requiredTokens} tokens</span> to perform this search, but your wallet only has <span className="font-bold text-red-500">{wallet?.balance || 0} tokens</span> available.
             </p>
             <div className="flex gap-4">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowTopUpModal(false)}
                 className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
-              <Link 
+              <Link
                 href="/wallet/top-up"
                 className="flex-1 py-3 px-4 rounded-xl bg-accent-primary text-white font-bold hover:bg-accent-hover transition-colors text-center shadow-lg shadow-accent-primary/20 flex items-center justify-center"
               >
