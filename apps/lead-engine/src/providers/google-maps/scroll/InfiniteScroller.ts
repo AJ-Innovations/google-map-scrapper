@@ -44,7 +44,8 @@ export class InfiniteScroller {
       scrollCount++;
       EventBus.publish(EventTypes.ScrollProgress, { scrollCount });
 
-      const newItems = await this.collector.collectCurrentBatch();
+      const remaining = maxResults - totalCollected;
+      const newItems = await this.collector.collectCurrentBatch(remaining);
       totalCollected += newItems.length;
 
       if (newItems.length === 0) {
