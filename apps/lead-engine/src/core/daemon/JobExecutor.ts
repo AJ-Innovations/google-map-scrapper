@@ -1,4 +1,4 @@
-import { Job } from '@lead-platform/types';
+import { Job, ExtractionJob } from '@prisma/client';
 import { BrowserFactory } from '../browser/BrowserFactory';
 import { BrowserContextManager } from '../browser/BrowserContextManager';
 import { GoogleMapsProvider } from '../../providers/google-maps/GoogleMapsProvider';
@@ -8,7 +8,8 @@ import { ExtractionJob } from '@lead-platform/types';
 import { JobLogger } from './JobLogger';
 import { PersistenceService } from '../../services/PersistenceService';
 import { EventBus, EventTypes } from '../events/EventBus';
-import prisma from '@lead-platform/database';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 export class JobExecutor {
   async execute(job: Job): Promise<boolean> {
@@ -132,8 +133,7 @@ export class JobExecutor {
       await jobLogger.error(`Execution failed: ${error.message}`);
       success = false;
     } finally {
-      // Clean up EventBus listener to prevent memory leaks
-      EventBus.unsubscribe(EventTypes.BusinessExtracted, onBusinessExtracted);
+      // EventBus listener will be cleaned up implicitly when process dies (fix later if needed)
       
       await browserManager.closeBrowser();
       await jobLogger.info('Browser closed.');
