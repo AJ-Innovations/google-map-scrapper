@@ -33,6 +33,12 @@ export class JobExecutor {
         queueSnapshot: [],
         workerSnapshot: {}
       });
+
+      // Update real-time progress
+      await prisma.job.update({
+        where: { id: job.id },
+        data: { processed: { increment: 1 } }
+      });
     };
     
     EventBus.subscribe(EventTypes.BusinessExtracted, onBusinessExtracted);
@@ -93,6 +99,33 @@ export class JobExecutor {
       await mapsProvider.cleanup();
 
       if (success) {
+        // Calculate refunds
+        const finalJob = await prisma.job.findUnique({ select: { processed: true, userId: true, keyword: true }, where: { id: job.id } });
+        if (finalJob && finalJob.userId) {
+           const processed = finalJob.processed;
+           if (processed < maxResults) {
+              const refundAmount = maxResults - processed;
+              await jobLogger.info(`Job finished early. Refunding ${refundAmount} tokens to user.`);
+              
+              const wallet = await prisma.wallet.findUnique({ where: { userId: finalJob.userId } });
+              if (wallet) {
+                await prisma.$transaction([
+                  prisma.wallet.update({
+                    where: { id: wallet.id },
+                    data: { balance: { increment: refundAmount } }
+                  }),
+                  prisma.walletTransaction.create({
+                    data: {
+                      walletId: wallet.id,
+                      amount: refundAmount,
+                      type: 'JOB_REFUND',
+                      description: `Refund for unused tokens (${refundAmount} leads) from Job: ${finalJob.keyword}`
+                    }
+                  })
+                ]);
+              }
+           }
+        }
         await jobLogger.info('Job completed successfully.');
       }
     } catch (error: any) {
